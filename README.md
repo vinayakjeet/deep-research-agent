@@ -327,19 +327,9 @@ What I'd build next: iterative re-search when the first pass retrieval is weak, 
 
 ## Video demo
 
-**Link**: _paste your Loom/Drive/YouTube URL here before submitting_
+https://github.com/user-attachments/assets/4491a3e1-04df-4c05-9106-38164ceada6b
 
-Demo script (3 queries that cover the main cases):
 
-```bash
-streamlit run deep_research_agent/ui/streamlit_app.py
-```
-
-1. `What is the capital of Bhutan?` — single-hop, shows streaming phases, citation
-2. `Compare solar energy capacity of India and China in 2024` — multi-query planning
-3. `What did the CEO of Acme Industries say at the private board meeting yesterday?` — insufficient evidence path
-
----
 
 ## Running tests
 
