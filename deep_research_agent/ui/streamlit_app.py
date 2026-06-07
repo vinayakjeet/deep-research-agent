@@ -1,5 +1,6 @@
 """Streamlit UI for deep research with live status streaming."""
-
+import sys
+sys.path.insert(0, "/mount/src/deep-research-agent")
 from __future__ import annotations
 
 import os
