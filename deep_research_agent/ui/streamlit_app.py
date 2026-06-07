@@ -1,16 +1,13 @@
 """Streamlit UI for deep research with live status streaming."""
+
+from __future__ import annotations
 import sys
 sys.path.insert(0, "/mount/src/deep-research-agent")
-from __future__ import annotations
-
 import os
 from pathlib import Path
-
 import streamlit as st
-
 from deep_research_agent.memory.store import MemoryStore
 from deep_research_agent.orchestration.orchestrator import ResearchOrchestrator
-
 
 def _load_dotenv() -> None:
     try:
