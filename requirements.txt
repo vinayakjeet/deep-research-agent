@@ -1,0 +1,11 @@
+# Phase 1: foundation (stdlib sqlite3)
+# Phase 2: ingestion
+requests>=2.31.0
+aiohttp>=3.9.0
+selectolax>=0.3.21
+readability-lxml>=0.8.1
+# Phase 4: streaming API and UI
+fastapi>=0.110.0
+uvicorn>=0.27.0
+streamlit>=1.32.0
+python-dotenv>=1.0.0

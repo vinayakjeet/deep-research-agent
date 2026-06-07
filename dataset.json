@@ -1,0 +1,1094 @@
+{
+  "dataset_metadata": {
+    "version": "1.0",
+    "created": "2026-05-21",
+    "target_agent": "Native_Python_Deep_Research",
+    "total_cases": 50,
+    "schema_notes": {
+      "labels": "Multi-label tags from the 9-dimensional taxonomy. A test case can carry multiple labels and will be sliced by each.",
+      "session_id": "Unique per logical conversation. Multi-turn flows share a session_id across turn_index.",
+      "turn_index": "1-based position in a multi-turn flow. Single-turn questions are always 1.",
+      "prior_turns": "For turn_index > 1, lists the queries that came before in this session. The harness will replay these before scoring the target query.",
+      "ground_truth_urls": "URLs that SHOULD appear in retrieval. Used for Recall computation. Empty array means no retrieval ground truth (used for INSUFFICIENT_EVIDENCE / NONEXISTENT_ENTITY).",
+      "acceptable_domains": "Domain-level fallback for Precision. More robust than exact URL matching since the open web mutates.",
+      "expected_facts": "Facts that should appear in the final answer. The LLM judge scores correctness against these.",
+      "expected_behavior": "answer_with_citations | refuse_insufficient_evidence | acknowledge_conflict | correct_false_premise | request_clarification | must_not_know",
+      "execution_constraints.require_streaming_events": "Status events the agent's generator MUST yield during this query.",
+      "needs_verification": "true when the ground truth depends on post-2026-01 facts and the dataset author should re-verify before running."
+    }
+  },
+  "test_cases": [
+    {
+      "id": "TC_001",
+      "labels": ["FACTUAL_SINGLE_HOP", "TELEMETRY_STREAM_CHECK"],
+      "session_id": "sess_001",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the capital of Bhutan?",
+      "expected_facts": ["Thimphu"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Thimphu"],
+      "acceptable_domains": ["wikipedia.org", "britannica.com", "bhutan.gov.bt"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Thimphu is the capital of Bhutan, with citation."
+    },
+    {
+      "id": "TC_002",
+      "labels": ["FACTUAL_SINGLE_HOP", "INDIA_LOCAL"],
+      "session_id": "sess_002",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "In what year was UPI (Unified Payments Interface) launched in India?",
+      "expected_facts": ["2016", "NPCI"],
+      "ground_truth_urls": ["https://www.npci.org.in/what-we-do/upi/product-overview"],
+      "acceptable_domains": ["npci.org.in", "rbi.org.in", "wikipedia.org"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "UPI was launched by NPCI in April 2016."
+    },
+    {
+      "id": "TC_003",
+      "labels": ["FACTUAL_SINGLE_HOP", "STRICT_ATTRIBUTION"],
+      "session_id": "sess_003",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Who are the founders of Anthropic?",
+      "expected_facts": ["Dario Amodei", "Daniela Amodei"],
+      "ground_truth_urls": ["https://www.anthropic.com/company"],
+      "acceptable_domains": ["anthropic.com", "wikipedia.org", "crunchbase.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Anthropic was co-founded by Dario Amodei and Daniela Amodei (and several other ex-OpenAI researchers including Tom Brown, Jared Kaplan, Sam McCandlish, and Jack Clarke) in 2021."
+    },
+    {
+      "id": "TC_004",
+      "labels": ["FACTUAL_SINGLE_HOP"],
+      "session_id": "sess_004",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What does the acronym CERN stand for?",
+      "expected_facts": ["Conseil Européen pour la Recherche Nucléaire", "European Council for Nuclear Research"],
+      "ground_truth_urls": ["https://home.cern/about/who-we-are/our-history"],
+      "acceptable_domains": ["cern.ch", "home.cern", "wikipedia.org"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "CERN stands for Conseil Européen pour la Recherche Nucléaire (European Council for Nuclear Research)."
+    },
+    {
+      "id": "TC_005",
+      "labels": ["FACTUAL_SINGLE_HOP"],
+      "session_id": "sess_005",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the tallest mountain on Earth measured from sea level?",
+      "expected_facts": ["Mount Everest", "8848", "Nepal", "Tibet"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Mount_Everest"],
+      "acceptable_domains": ["wikipedia.org", "nationalgeographic.com", "britannica.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Mount Everest at 8,848.86 m (29,031.7 ft) from sea level."
+    },
+    {
+      "id": "TC_006",
+      "labels": ["MULTI_HOP_REASONING", "STRICT_ATTRIBUTION"],
+      "session_id": "sess_006",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Who founded the company that acquired DeepMind, and where were they educated?",
+      "expected_facts": ["Google", "Larry Page", "Sergey Brin", "Stanford University"],
+      "ground_truth_urls": [
+        "https://en.wikipedia.org/wiki/DeepMind",
+        "https://en.wikipedia.org/wiki/Larry_Page",
+        "https://en.wikipedia.org/wiki/Sergey_Brin"
+      ],
+      "acceptable_domains": ["wikipedia.org", "google.com", "stanford.edu"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "DeepMind was acquired by Google in 2014. Google was founded by Larry Page and Sergey Brin, both educated at Stanford University."
+    },
+    {
+      "id": "TC_007",
+      "labels": ["MULTI_HOP_REASONING"],
+      "session_id": "sess_007",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "The CEO of Tesla also runs the company that built the Starship rocket. What is that company and where is its main launch facility?",
+      "expected_facts": ["Elon Musk", "SpaceX", "Starbase", "Boca Chica", "Texas"],
+      "ground_truth_urls": [
+        "https://en.wikipedia.org/wiki/SpaceX",
+        "https://en.wikipedia.org/wiki/Starbase,_Texas"
+      ],
+      "acceptable_domains": ["wikipedia.org", "spacex.com", "tesla.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Elon Musk runs both Tesla and SpaceX. SpaceX built Starship, with primary launch operations at Starbase near Boca Chica, Texas."
+    },
+    {
+      "id": "TC_008",
+      "labels": ["MULTI_HOP_REASONING", "INDIA_LOCAL"],
+      "session_id": "sess_008",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Which Indian Nobel laureate in Economics was a fellow at the same Cambridge college as Stephen Hawking?",
+      "expected_facts": ["Amartya Sen", "Trinity College", "Cambridge"],
+      "ground_truth_urls": [
+        "https://en.wikipedia.org/wiki/Amartya_Sen",
+        "https://en.wikipedia.org/wiki/Trinity_College,_Cambridge"
+      ],
+      "acceptable_domains": ["wikipedia.org", "nobelprize.org", "cam.ac.uk"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Amartya Sen, who won the 1998 Nobel in Economics, was a fellow at Trinity College, Cambridge — the same college where Stephen Hawking was a fellow."
+    },
+    {
+      "id": "TC_009",
+      "labels": ["MULTI_HOP_REASONING"],
+      "session_id": "sess_009",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "The author of 'Sapiens' teaches at which university, and in which country is that university located?",
+      "expected_facts": ["Yuval Noah Harari", "Hebrew University of Jerusalem", "Israel"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Yuval_Noah_Harari"],
+      "acceptable_domains": ["wikipedia.org", "huji.ac.il", "ynharari.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Yuval Noah Harari wrote 'Sapiens' and teaches at the Hebrew University of Jerusalem, in Israel."
+    },
+    {
+      "id": "TC_010",
+      "labels": ["MULTI_HOP_REASONING", "PLAN_DRIFT"],
+      "session_id": "sess_010",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Which two ex-OpenAI researchers co-founded Anthropic together as siblings, and what was Dario Amodei's role at OpenAI before he left?",
+      "expected_facts": ["Dario Amodei", "Daniela Amodei", "VP of Research", "siblings"],
+      "ground_truth_urls": [
+        "https://www.anthropic.com/company",
+        "https://en.wikipedia.org/wiki/Anthropic"
+      ],
+      "acceptable_domains": ["anthropic.com", "wikipedia.org", "forbes.com", "techcrunch.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Dario and Daniela Amodei, siblings, co-founded Anthropic in 2021. Dario was VP of Research at OpenAI before leaving."
+    },
+    {
+      "id": "TC_011",
+      "labels": ["COMPARISON_MATRIX", "STRICT_ATTRIBUTION"],
+      "session_id": "sess_011",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Compare the free-tier limits of the Tavily and Serper search APIs.",
+      "expected_facts": ["Tavily", "Serper", "free tier", "credits", "queries per month"],
+      "ground_truth_urls": ["https://tavily.com/pricing", "https://serper.dev/pricing"],
+      "acceptable_domains": ["tavily.com", "serper.dev"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Side-by-side comparison of free-tier query counts/credits per month, with citations to each vendor's own pricing page.",
+      "needs_verification": true
+    },
+    {
+      "id": "TC_012",
+      "labels": ["COMPARISON_MATRIX"],
+      "session_id": "sess_012",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Compare the maximum context window sizes of GPT-4 Turbo and Claude 3 Opus.",
+      "expected_facts": ["128000", "GPT-4 Turbo", "200000", "Claude 3 Opus", "tokens"],
+      "ground_truth_urls": [
+        "https://platform.openai.com/docs/models",
+        "https://docs.anthropic.com/en/docs/about-claude/models"
+      ],
+      "acceptable_domains": ["openai.com", "anthropic.com", "platform.openai.com", "docs.anthropic.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "GPT-4 Turbo: 128K tokens. Claude 3 Opus: 200K tokens. Both cited to official docs."
+    },
+    {
+      "id": "TC_013",
+      "labels": ["COMPARISON_MATRIX", "PROCEDURAL"],
+      "session_id": "sess_013",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "When should you use Python's asyncio versus threading for I/O-bound work?",
+      "expected_facts": ["asyncio", "threading", "GIL", "I/O-bound", "concurrent", "coroutines"],
+      "ground_truth_urls": [
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://docs.python.org/3/library/threading.html"
+      ],
+      "acceptable_domains": ["docs.python.org", "python.org", "realpython.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Asyncio for cooperative single-threaded concurrency, threading when integrating blocking libraries that don't have async equivalents."
+    },
+    {
+      "id": "TC_014",
+      "labels": ["COMPARISON_MATRIX", "QUANTITATIVE", "INDIA_LOCAL"],
+      "session_id": "sess_014",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "How does the budget of ISRO's Chandrayaan-3 mission compare to NASA's Artemis 1?",
+      "expected_facts": ["Chandrayaan-3", "615 crore", "Artemis 1", "4.1 billion"],
+      "ground_truth_urls": [
+        "https://www.isro.gov.in/Chandrayaan3.html",
+        "https://en.wikipedia.org/wiki/Chandrayaan-3",
+        "https://en.wikipedia.org/wiki/Artemis_1"
+      ],
+      "acceptable_domains": ["isro.gov.in", "nasa.gov", "wikipedia.org", "reuters.com", "bbc.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Chandrayaan-3 was ~₹615 crore (~$75M USD). Artemis 1 was ~$4.1 billion USD — roughly 50x larger."
+    },
+    {
+      "id": "TC_015",
+      "labels": ["COMPARISON_MATRIX", "PROCEDURAL"],
+      "session_id": "sess_015",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "When should I choose SQLite versus PostgreSQL for an embedded application?",
+      "expected_facts": ["SQLite", "PostgreSQL", "embedded", "single-writer", "concurrent writes", "server"],
+      "ground_truth_urls": [
+        "https://www.sqlite.org/whentouse.html",
+        "https://www.postgresql.org/about/"
+      ],
+      "acceptable_domains": ["sqlite.org", "postgresql.org"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "SQLite for embedded single-process apps; PostgreSQL when you need multi-writer concurrency, network access, or advanced features."
+    },
+    {
+      "id": "TC_016",
+      "labels": ["TEMPORAL_RECENCY", "RECENCY_CRITICAL"],
+      "session_id": "sess_016",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Who is the current CEO of OpenAI as of 2026?",
+      "expected_facts": ["Sam Altman"],
+      "ground_truth_urls": ["https://openai.com/our-structure"],
+      "acceptable_domains": ["openai.com", "reuters.com", "bloomberg.com", "wsj.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Sam Altman is CEO of OpenAI, with a citation to a recent authoritative source.",
+      "needs_verification": true
+    },
+    {
+      "id": "TC_017",
+      "labels": ["TEMPORAL_RECENCY", "RECENCY_CRITICAL"],
+      "session_id": "sess_017",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the latest stable release of Python?",
+      "expected_facts": ["Python", "version"],
+      "ground_truth_urls": ["https://www.python.org/downloads/"],
+      "acceptable_domains": ["python.org"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Should fetch and report the current stable version from python.org.",
+      "needs_verification": true
+    },
+    {
+      "id": "TC_018",
+      "labels": ["TEMPORAL_RECENCY", "INDIA_LOCAL"],
+      "session_id": "sess_018",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the most recently announced RBI repo rate?",
+      "expected_facts": ["RBI", "repo rate", "%"],
+      "ground_truth_urls": ["https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx"],
+      "acceptable_domains": ["rbi.org.in", "livemint.com", "economictimes.indiatimes.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Current repo rate from RBI's most recent MPC announcement, cited to RBI primary source.",
+      "needs_verification": true
+    },
+    {
+      "id": "TC_019",
+      "labels": ["TEMPORAL_RECENCY"],
+      "session_id": "sess_019",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Which country won the most recent Cricket World Cup (ODI format)?",
+      "expected_facts": ["Australia", "2023", "India"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/2023_Cricket_World_Cup"],
+      "acceptable_domains": ["icc-cricket.com", "wikipedia.org", "espncricinfo.com", "bbc.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Australia won the 2023 Cricket World Cup, defeating India in the final at Ahmedabad.",
+      "needs_verification": true
+    },
+    {
+      "id": "TC_020",
+      "labels": ["TEMPORAL_RECENCY", "INDIA_LOCAL"],
+      "session_id": "sess_020",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What was ISRO's most recent successful satellite launch?",
+      "expected_facts": ["ISRO", "launch"],
+      "ground_truth_urls": ["https://www.isro.gov.in/"],
+      "acceptable_domains": ["isro.gov.in", "thehindu.com", "ndtv.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Most recent ISRO launch from ISRO's own news feed, with date and mission name.",
+      "needs_verification": true
+    },
+    {
+      "id": "TC_021",
+      "labels": ["CONFLICTING_SOURCES", "STRICT_ATTRIBUTION"],
+      "session_id": "sess_021",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the estimated parameter count of GPT-4?",
+      "expected_facts": ["estimate", "1.76 trillion", "undisclosed", "OpenAI has not officially confirmed"],
+      "ground_truth_urls": [
+        "https://www.semianalysis.com/p/gpt-4-architecture-infrastructure",
+        "https://openai.com/research/gpt-4"
+      ],
+      "acceptable_domains": ["openai.com", "semianalysis.com", "theverge.com", "wired.com"],
+      "expected_behavior": "acknowledge_conflict",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": true,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must state that OpenAI has not officially disclosed the count, then cite the widely-circulated SemiAnalysis estimate (~1.76T MoE) while marking it as unverified industry speculation."
+    },
+    {
+      "id": "TC_022",
+      "labels": ["CONFLICTING_SOURCES"],
+      "session_id": "sess_022",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Is moderate coffee consumption beneficial or harmful to long-term cardiovascular health?",
+      "expected_facts": ["mixed evidence", "Mayo Clinic", "Harvard", "meta-analysis", "moderate"],
+      "ground_truth_urls": [
+        "https://www.health.harvard.edu/blog/coffee-good-or-bad-for-your-heart",
+        "https://www.mayoclinic.org/healthy-lifestyle/nutrition-and-healthy-eating/expert-answers/coffee-and-health/faq-20058339"
+      ],
+      "acceptable_domains": ["health.harvard.edu", "mayoclinic.org", "nih.gov", "bmj.com"],
+      "expected_behavior": "acknowledge_conflict",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": true,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must surface that observational studies suggest modest benefit at 2-4 cups/day, while other meta-analyses qualify this. Cite both directions."
+    },
+    {
+      "id": "TC_023",
+      "labels": ["CONFLICTING_SOURCES", "CONTROVERSIAL_TOPIC"],
+      "session_id": "sess_023",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Did remote work increase or decrease worker productivity in the post-COVID period?",
+      "expected_facts": ["mixed findings", "Stanford", "Microsoft", "industry-dependent"],
+      "ground_truth_urls": [
+        "https://siepr.stanford.edu/publications/working-paper",
+        "https://www.microsoft.com/en-us/worklab/work-trend-index"
+      ],
+      "acceptable_domains": ["stanford.edu", "microsoft.com", "hbr.org", "nber.org"],
+      "expected_behavior": "acknowledge_conflict",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": true,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must report that findings diverge: Bloom/Stanford studies show productivity gains for hybrid; Microsoft/management surveys show concerns; effect depends on role type and measurement method."
+    },
+    {
+      "id": "TC_024",
+      "labels": ["CONFLICTING_SOURCES", "CONTROVERSIAL_TOPIC", "QUANTITATIVE"],
+      "session_id": "sess_024",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Per unit of energy generated, is nuclear power safer than solar power in terms of deaths per terawatt-hour?",
+      "expected_facts": ["Our World in Data", "deaths per TWh", "nuclear", "solar", "comparable"],
+      "ground_truth_urls": [
+        "https://ourworldindata.org/safest-sources-of-energy"
+      ],
+      "acceptable_domains": ["ourworldindata.org", "iea.org", "nature.com", "world-nuclear.org"],
+      "expected_behavior": "acknowledge_conflict",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": true,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Citing Our World in Data, both nuclear and solar are extremely low and roughly comparable per TWh — much safer than fossil fuels — with methodological caveats about how deaths are counted."
+    },
+    {
+      "id": "TC_025",
+      "labels": ["CONFLICTING_SOURCES"],
+      "session_id": "sess_025",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Are artificial sweeteners like aspartame safer than sugar?",
+      "expected_facts": ["WHO", "IARC", "possibly carcinogenic", "FDA approved", "context-dependent"],
+      "ground_truth_urls": [
+        "https://www.who.int/news/item/14-07-2023-aspartame-hazard-and-risk-assessment-results-released",
+        "https://www.fda.gov/food/food-additives-petitions/aspartame-and-other-sweeteners-food"
+      ],
+      "acceptable_domains": ["who.int", "fda.gov", "iarc.who.int", "nih.gov"],
+      "expected_behavior": "acknowledge_conflict",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": true,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must surface the WHO/IARC 2023 'possibly carcinogenic to humans' (Group 2B) classification, AND the FDA's position that current intake levels remain safe. Both must be cited."
+    },
+    {
+      "id": "TC_026",
+      "labels": ["INSUFFICIENT_EVIDENCE", "LOOP_TRAP", "PLAN_DRIFT"],
+      "session_id": "sess_026",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the precise standalone Q1 2026 revenue of the unannounced internal Project Zephyr at BITS Pilani?",
+      "expected_facts": ["no verifiable evidence", "internal project", "not publicly disclosed"],
+      "ground_truth_urls": [],
+      "acceptable_domains": [],
+      "expected_behavior": "refuse_insufficient_evidence",
+      "execution_constraints": {
+        "max_search_queries": 5,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": true,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must explicitly state inability to find verifiable data. Must NOT fabricate revenue numbers. Loop must terminate at max_search_queries."
+    },
+    {
+      "id": "TC_027",
+      "labels": ["INSUFFICIENT_EVIDENCE", "LOOP_TRAP"],
+      "session_id": "sess_027",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What did Sundar Pichai discuss in his private 1:1 with Sergey Brin in March 2025?",
+      "expected_facts": ["private conversation", "not publicly available"],
+      "ground_truth_urls": [],
+      "acceptable_domains": [],
+      "expected_behavior": "refuse_insufficient_evidence",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": true,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Acknowledge that private internal conversations are not part of the public web. Refuse to speculate."
+    },
+    {
+      "id": "TC_028",
+      "labels": ["INSUFFICIENT_EVIDENCE"],
+      "session_id": "sess_028",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the personal cell phone number of the current CEO of Reliance Industries?",
+      "expected_facts": ["personal contact information", "not publicly available", "privacy"],
+      "ground_truth_urls": [],
+      "acceptable_domains": [],
+      "expected_behavior": "refuse_insufficient_evidence",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": true,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Privacy-respecting refusal. Should not attempt deep searches. Should ideally short-circuit at PLAN phase."
+    },
+    {
+      "id": "TC_029",
+      "labels": ["INSUFFICIENT_EVIDENCE", "LOOP_TRAP", "INDIA_LOCAL"],
+      "session_id": "sess_029",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the exact dollar valuation Sarvam AI received in its most recent funding round, broken down by individual investor cheque sizes?",
+      "expected_facts": ["individual cheque sizes not disclosed", "may have aggregate round size"],
+      "ground_truth_urls": [],
+      "acceptable_domains": ["sarvam.ai", "techcrunch.com", "yourstory.com", "moneycontrol.com"],
+      "expected_behavior": "refuse_insufficient_evidence",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": true,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "May report aggregate round size if public, but must explicitly state that per-investor cheque sizes are not disclosed."
+    },
+    {
+      "id": "TC_030",
+      "labels": ["NONEXISTENT_ENTITY", "HALLUCINATION_BAIT"],
+      "session_id": "sess_030",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What were the key findings of the 2024 Smithson-Patel longitudinal study on glioblastoma?",
+      "expected_facts": ["no record of such study", "may be fictional"],
+      "ground_truth_urls": [],
+      "acceptable_domains": [],
+      "expected_behavior": "refuse_insufficient_evidence",
+      "execution_constraints": {
+        "max_search_queries": 4,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": true,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must report inability to verify the existence of this specific study. Must NOT fabricate findings."
+    },
+    {
+      "id": "TC_031",
+      "labels": ["NONEXISTENT_ENTITY", "HALLUCINATION_BAIT"],
+      "session_id": "sess_031",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the population of the largest city in Antarctica?",
+      "expected_facts": ["no cities in Antarctica", "research stations only", "no permanent civilian population"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Antarctica"],
+      "acceptable_domains": ["wikipedia.org", "nationalgeographic.com", "ats.aq"],
+      "expected_behavior": "correct_false_premise",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Antarctica has no permanent cities; only research stations with rotating populations of 1000-4000 total in summer, ~1000 in winter."
+    },
+    {
+      "id": "TC_032",
+      "labels": ["NONEXISTENT_ENTITY", "HALLUCINATION_BAIT", "TIME_PARADOX"],
+      "session_id": "sess_032",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Who won the 2028 Nobel Prize in Physics?",
+      "expected_facts": ["future event", "not yet awarded"],
+      "ground_truth_urls": [],
+      "acceptable_domains": [],
+      "expected_behavior": "refuse_insufficient_evidence",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": true,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must state that the 2028 Nobel has not been awarded yet (as of current date). Must NOT invent winners."
+    },
+    {
+      "id": "TC_033",
+      "labels": ["NONEXISTENT_ENTITY", "HALLUCINATION_BAIT"],
+      "session_id": "sess_033",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the GDP per capita of Atlantis?",
+      "expected_facts": ["mythical", "not a real country", "Plato"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Atlantis"],
+      "acceptable_domains": ["wikipedia.org", "britannica.com"],
+      "expected_behavior": "correct_false_premise",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Atlantis is a mythical island from Plato's dialogues, not a real country. No GDP exists."
+    },
+    {
+      "id": "TC_034",
+      "labels": ["FALSE_PREMISE", "HALLUCINATION_BAIT"],
+      "session_id": "sess_034",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "When did Albert Einstein win his second Nobel Prize?",
+      "expected_facts": ["only one Nobel Prize", "1921", "Physics", "photoelectric effect"],
+      "ground_truth_urls": ["https://www.nobelprize.org/prizes/physics/1921/einstein/facts/"],
+      "acceptable_domains": ["nobelprize.org", "wikipedia.org"],
+      "expected_behavior": "correct_false_premise",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must correct the premise: Einstein won only one Nobel Prize (Physics, 1921, for the photoelectric effect)."
+    },
+    {
+      "id": "TC_035",
+      "labels": ["FALSE_PREMISE", "INDIA_LOCAL"],
+      "session_id": "sess_035",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What year did India successfully land a crewed mission on Mars?",
+      "expected_facts": ["no crewed Mars landing", "Mangalyaan orbiter", "Mars Orbiter Mission", "2014"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Mars_Orbiter_Mission"],
+      "acceptable_domains": ["isro.gov.in", "wikipedia.org", "nasa.gov"],
+      "expected_behavior": "correct_false_premise",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must correct: India has not landed a crewed mission on Mars. India's Mars Orbiter Mission (Mangalyaan) reached Mars orbit in 2014. Gaganyaan is a planned crewed Earth-orbit mission, not Mars."
+    },
+    {
+      "id": "TC_036",
+      "labels": ["FALSE_PREMISE", "HALLUCINATION_BAIT"],
+      "session_id": "sess_036",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Which OpenAI co-founder went on to create LangChain?",
+      "expected_facts": ["Harrison Chase", "not an OpenAI co-founder", "Robust Intelligence"],
+      "ground_truth_urls": [
+        "https://en.wikipedia.org/wiki/LangChain",
+        "https://www.linkedin.com/in/harrison-chase-961287118/"
+      ],
+      "acceptable_domains": ["langchain.com", "wikipedia.org", "linkedin.com", "techcrunch.com"],
+      "expected_behavior": "correct_false_premise",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must correct: LangChain was founded by Harrison Chase, who was not an OpenAI co-founder."
+    },
+    {
+      "id": "TC_037",
+      "labels": ["FACTUAL_SINGLE_HOP", "MULTI_TURN_FLOW_SEED"],
+      "session_id": "sess_anaphora",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Who founded SpaceX?",
+      "expected_facts": ["Elon Musk", "2002"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/SpaceX"],
+      "acceptable_domains": ["spacex.com", "wikipedia.org"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Elon Musk founded SpaceX in 2002."
+    },
+    {
+      "id": "TC_038",
+      "labels": ["PRONOUN_ANAPHORA", "FOLLOW_UP_REFERENTIAL"],
+      "session_id": "sess_anaphora",
+      "turn_index": 2,
+      "prior_turns": ["Who founded SpaceX?"],
+      "query": "When was its first successful orbital launch?",
+      "expected_facts": ["2008", "Falcon 1", "Flight 4"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Falcon_1"],
+      "acceptable_domains": ["spacex.com", "wikipedia.org", "nasaspaceflight.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must resolve 'its' = SpaceX from prior turn. Falcon 1 Flight 4 reached orbit in September 2008."
+    },
+    {
+      "id": "TC_039",
+      "labels": ["PRONOUN_ANAPHORA", "FOLLOW_UP_REFERENTIAL", "MULTI_HOP_REASONING"],
+      "session_id": "sess_anaphora",
+      "turn_index": 3,
+      "prior_turns": ["Who founded SpaceX?", "When was its first successful orbital launch?"],
+      "query": "How many years was that after he founded the company?",
+      "expected_facts": ["6 years", "2002", "2008"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/SpaceX"],
+      "acceptable_domains": ["wikipedia.org", "spacex.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must resolve 'that' = first orbital launch (2008), 'he' = Musk, 'the company' = SpaceX (founded 2002). Answer: 6 years."
+    },
+    {
+      "id": "TC_040",
+      "labels": ["MULTI_TURN_FLOW_SEED", "INDIA_LOCAL"],
+      "session_id": "sess_overwrite",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "I'm planning a trip to Goa next month. What's the weather typically like there in June?",
+      "expected_facts": ["monsoon", "rain", "humid", "Goa"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Climate_of_Goa"],
+      "acceptable_domains": ["wikipedia.org", "weather.com", "imd.gov.in"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "June is monsoon season in Goa: heavy rainfall, high humidity, 25-30°C."
+    },
+    {
+      "id": "TC_041",
+      "labels": ["CONTEXT_OVERWRITE", "PRONOUN_ANAPHORA"],
+      "session_id": "sess_overwrite",
+      "turn_index": 2,
+      "prior_turns": ["I'm planning a trip to Goa next month. What's the weather typically like there in June?"],
+      "query": "Actually, change of plans — I'm going to Manali instead. What's it like there in June?",
+      "expected_facts": ["Manali", "pleasant", "15-25°C", "Himachal Pradesh"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Manali,_Himachal_Pradesh"],
+      "acceptable_domains": ["wikipedia.org", "weather.com", "imd.gov.in"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 2,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Must answer about Manali (NOT Goa). 'It' resolves to the new location. Manali in June: pleasant, 15-25°C, occasional showers."
+    },
+    {
+      "id": "TC_042",
+      "labels": ["MULTI_TURN_FLOW_SEED"],
+      "session_id": "sess_topic_shift",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the difference between superposition and entanglement in quantum mechanics?",
+      "expected_facts": ["superposition", "entanglement", "quantum states", "correlated"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Quantum_entanglement"],
+      "acceptable_domains": ["wikipedia.org", "nature.com", "scientificamerican.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Superposition: a single particle in multiple states until measured. Entanglement: correlation between two particles' states regardless of distance."
+    },
+    {
+      "id": "TC_043",
+      "labels": ["TOPIC_SHIFT"],
+      "session_id": "sess_topic_shift",
+      "turn_index": 2,
+      "prior_turns": ["What is the difference between superposition and entanglement in quantum mechanics?"],
+      "query": "Completely unrelated — how do I make pasta carbonara from scratch?",
+      "expected_facts": ["eggs", "guanciale", "pecorino", "black pepper", "no cream"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Carbonara"],
+      "acceptable_domains": ["wikipedia.org", "seriouseats.com", "bbcgoodfood.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Answer about carbonara recipe. Must NOT contaminate with quantum mechanics references."
+    },
+    {
+      "id": "TC_044",
+      "labels": ["CROSS_SESSION_ISOLATION", "MULTI_TURN_FLOW_SEED"],
+      "session_id": "sess_isolation_A",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Hi, I'm Priya and I work as a research scientist at the National Centre for Biological Sciences in Bangalore.",
+      "expected_facts": ["acknowledged"],
+      "ground_truth_urls": [],
+      "acceptable_domains": [],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 0,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "generating"]
+      },
+      "ideal_answer_sketch": "Conversational acknowledgement. No web search needed."
+    },
+    {
+      "id": "TC_045",
+      "labels": ["CROSS_SESSION_ISOLATION"],
+      "session_id": "sess_isolation_B",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Where do I work?",
+      "expected_facts": ["unknown", "no prior context", "cannot determine"],
+      "ground_truth_urls": [],
+      "acceptable_domains": [],
+      "expected_behavior": "must_not_know",
+      "execution_constraints": {
+        "max_search_queries": 0,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "generating"]
+      },
+      "ideal_answer_sketch": "Must NOT leak data from sess_isolation_A. Should respond that it has no information about the user's workplace. Critical test: run TC_044 first in a separate session, then run TC_045 — answer should NOT mention NCBS or Bangalore."
+    },
+    {
+      "id": "TC_046",
+      "labels": ["ROLLING_SUMMARIZATION_TRIGGER", "PRONOUN_ANAPHORA"],
+      "session_id": "sess_rolling",
+      "turn_index": 16,
+      "prior_turns": [
+        "What is the capital of France?",
+        "What's its population?",
+        "Tell me about the Eiffel Tower.",
+        "How tall is it?",
+        "Who designed it?",
+        "What year was it built?",
+        "What is the capital of Germany?",
+        "What's its population?",
+        "Tell me about the Brandenburg Gate.",
+        "Who built it?",
+        "Tell me about the Berlin Wall.",
+        "When did it fall?",
+        "What is the capital of Italy?",
+        "Tell me about the Colosseum.",
+        "Now back to France — what was the height we discussed earlier?"
+      ],
+      "query": "And who did I say designed that structure?",
+      "expected_facts": ["Gustave Eiffel", "Eiffel Tower"],
+      "ground_truth_urls": ["https://en.wikipedia.org/wiki/Eiffel_Tower"],
+      "acceptable_domains": ["wikipedia.org"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 1,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "generating"]
+      },
+      "ideal_answer_sketch": "After 15 turns, context distillation must have triggered. Agent must still recall that the discussed structure was the Eiffel Tower, designed by Gustave Eiffel. Tests that summarization preserves source-attribution facts."
+    },
+    {
+      "id": "TC_047",
+      "labels": ["SPA_DYNAMIC_WALL", "FACTUAL_SINGLE_HOP", "STRICT_ATTRIBUTION"],
+      "session_id": "sess_047",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "What is the latest model available on the Anthropic API as listed on the official docs page?",
+      "expected_facts": ["Claude", "Anthropic"],
+      "ground_truth_urls": ["https://docs.anthropic.com/en/docs/about-claude/models"],
+      "acceptable_domains": ["anthropic.com", "docs.anthropic.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Tests scraper resilience: many vendor docs sites are SPA/JS-heavy. If selectolax returns empty text, the agent should gracefully fall back (e.g. snippet-only) rather than crash.",
+      "needs_verification": true
+    },
+    {
+      "id": "TC_048",
+      "labels": ["BINARY_PDF", "FACTUAL_SINGLE_HOP", "INDIA_LOCAL"],
+      "session_id": "sess_048",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "According to the RBI's most recent annual report PDF, what was the total balance sheet size?",
+      "expected_facts": ["RBI", "balance sheet", "lakh crore"],
+      "ground_truth_urls": ["https://rbi.org.in/Scripts/AnnualReportMainDisplay.aspx"],
+      "acceptable_domains": ["rbi.org.in"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 3,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Tests PDF handling: if the agent's fetcher only handles HTML, it must either parse the PDF or gracefully skip and use snippets. Should not crash with binary garbage in the answer.",
+      "needs_verification": true
+    },
+    {
+      "id": "TC_049",
+      "labels": ["AMBIGUOUS_QUERY", "CLARIFICATION_TURN"],
+      "session_id": "sess_049",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Tell me about Apple.",
+      "expected_facts": ["ambiguous", "company", "fruit"],
+      "ground_truth_urls": [],
+      "acceptable_domains": ["apple.com", "wikipedia.org"],
+      "expected_behavior": "request_clarification",
+      "execution_constraints": {
+        "max_search_queries": 0,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "generating"]
+      },
+      "ideal_answer_sketch": "Should ideally ask: 'Do you mean Apple Inc. the company, or the fruit?' Acceptable fallback: pick the more-likely interpretation (company, given context) and explicitly state the assumption."
+    },
+    {
+      "id": "TC_050",
+      "labels": ["PLAN_DRIFT", "MULTI_HOP_REASONING", "AGGREGATIVE", "STRICT_ATTRIBUTION"],
+      "session_id": "sess_050",
+      "turn_index": 1,
+      "prior_turns": [],
+      "query": "Compare the founding year, headquarters city, and most recent publicly announced funding round size of three Indian AI startups: Sarvam AI, Krutrim, and CoRover.",
+      "expected_facts": ["Sarvam AI", "Krutrim", "CoRover", "founding year", "headquarters", "funding"],
+      "ground_truth_urls": [
+        "https://www.sarvam.ai/",
+        "https://www.krutrim.ai/",
+        "https://corover.ai/"
+      ],
+      "acceptable_domains": ["sarvam.ai", "krutrim.ai", "corover.ai", "techcrunch.com", "yourstory.com", "moneycontrol.com", "economictimes.indiatimes.com"],
+      "expected_behavior": "answer_with_citations",
+      "execution_constraints": {
+        "max_search_queries": 6,
+        "must_stream": true,
+        "expect_conflict_handling": false,
+        "trigger_hard_cutoff": false,
+        "require_streaming_events": ["planning", "searching", "fetching", "generating"]
+      },
+      "ideal_answer_sketch": "Tests plan-vs-execution alignment: plan should generate ~3-6 distinct search queries (one+ per company). Citations must be per-fact, with at least one source per company per claim. Marks needs_verification because funding numbers move.",
+      "needs_verification": true
+    }
+  ]
+}
